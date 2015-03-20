@@ -1,0 +1,99 @@
+#!/usr/bin/env node
+
+'use strict';
+
+var aws = require('aws-sdk');
+var Table = require('cli-table');
+var fs = require('fs');
+var constructed=[];
+var ec2 = new aws.EC2({region: "ap-southeast-2"});
+var table = new Table({
+    head: ['','Name','ID','Type','LaunchedAt','IP','State']
+  , colWidths: [5,40,12,12,28,20,20]
+});
+
+function usage()
+{
+	console.log("Usage");
+	console.log("---------------------------------------------------------");
+	console.log(process.argv[1] + " arg1 [arg2]...[argN]");
+	console.log("arg1: Search string in a dashed naming convention");
+	console.log("argN: Search string in a dashed naming convention");
+	console.log("For example , group-environment-*-application-single can be found with "+process.argv[1]+" group environment \"*\" application single");
+}
+
+if (process.argv.length < 3)
+{
+	usage();
+	process.exit(1);
+}
+
+var finalString="";
+var fileName = process.argv[2];
+for(var i=3; i< process.argv.length; i++)
+{
+	if(finalString == "")
+	{
+		finalString = process.argv[i];
+	}
+	else
+	{
+		finalString = finalString + "-" + process.argv[i];
+	}
+}
+finalString = finalString+"*"; 
+
+var params = {
+  DryRun: false,
+  Filters : [
+  	{
+  		Name: 'tag:Name',
+  		Values : [
+  			finalString
+  		]
+  	}
+  ]
+};
+ec2.describeInstances(params, function(err, data) {
+  if (err) 
+  	console.log(err, err.stack);
+  else
+  {
+  		var counter = 0;
+  		var constructCounter = 0;
+  		if(data.Reservations.length > 0)
+  		{
+		  	for(var i=0;i<data.Reservations.length;i++)
+		  	{
+		  		for(var j=0; j<data.Reservations[i].Instances.length; j++)
+		  		{
+		  			for(var k=0;k<data.Reservations[i].Instances[j].Tags.length;k++)
+			  		{
+			  			if(data.Reservations[i].Instances[j].Tags[k].Key == "Name")
+			  			{
+			  				constructed[++constructCounter] = data.Reservations[i].Instances[j];
+			  				if(typeof data.Reservations[i].Instances[j].PrivateIpAddress === 'undefined') {
+			  					table.push([++counter,data.Reservations[i].Instances[j].Tags[k].Value,data.Reservations[i].Instances[j].InstanceId,data.Reservations[i].Instances[j].InstanceType,data.Reservations[i].Instances[j].LaunchTime,'n/a',data.Reservations[i].Instances[j].State.Name]);
+			  				}
+			  				else
+			  				{
+			  					table.push([++counter,data.Reservations[i].Instances[j].Tags[k].Value,data.Reservations[i].Instances[j].InstanceId,data.Reservations[i].Instances[j].InstanceType,data.Reservations[i].Instances[j].LaunchTime,data.Reservations[i].Instances[j].PrivateIpAddress,data.Reservations[i].Instances[j].State.Name]);	
+			  				}
+			  			}
+			  			
+			  		}	
+		  		}
+		  		
+		  	}
+		  	fs.writeFile(fileName, JSON.stringify(constructed), function (err) {
+			  if (err) return console.log(err);
+			  process.exit();
+			});
+		  	console.log(table.toString());
+	  	}
+	  	else
+	  	{
+	  		console.log("No instances found");
+	  	}
+  }
+});

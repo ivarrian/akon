@@ -1,0 +1,19 @@
+binary="connect"
+outputFile="list.connect"
+binaryPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+node $binaryPath/$binary $binaryPath/$outputFile $*
+read -p "Please select an instance number to connect to (as ec2-user):" choice
+choice=$(echo $choice | xargs)
+if [[ $choice != "" ]];
+	then
+	ipAddress=$(cat $binaryPath/$outputFile | jq -r ".[$choice].PrivateIpAddress")
+	if [[ $ipAddress != "null" ]];
+		then
+			rm $binaryPath/$outputFile
+			ssh -o StrictHostKeyChecking=no ec2-user@$ipAddress
+		else
+			echo "Invalid choice"
+		fi
+	else
+		rm $binaryPath/$outputFile
+fi

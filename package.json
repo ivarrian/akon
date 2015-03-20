@@ -1,0 +1,23 @@
+{
+  "name": "awsconnector",
+  "version": "1.0.0",
+  "description": "Node/Shell based connector to connect AWS instances using the dashed name format",
+  "main": "connector",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ivarrian/awsconnector.git"
+  },
+  "author": "Ravi Nair <ravi.nair@news.com.au> (http://graygoofactory.com)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ivarrian/awsconnector/issues"
+  },
+  "homepage": "https://github.com/ivarrian/awsconnector",
+  "dependencies": {
+    "aws-sdk": "^2.1.18",
+    "cli-table": "^0.3.1"
+  }
+}
