@@ -7,6 +7,15 @@ Simple utility to connect to EC2 instances based on the dashed naming scheme (ex
 	npm install
 	./connector arg1 [arg2] ... [argn]
 
+# example
+
+To connect to a single instance with the name tag : foo-bar-1-dev
+
+	./connector foo bar 1 dev
+
+To connect to multiple instances with name tag of pattern : foo-bar-*-dev
+
+	./connector foo bar '*' dev
 
 # Tip
 
