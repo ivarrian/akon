@@ -22,7 +22,7 @@ function usage()
 	console.log("For example , group-environment-*-application-single can be found with "+process.argv[1]+" group environment \"*\" application single");
 }
 
-if (process.argv.length < 3)
+if (process.argv.length < 4)
 {
 	usage();
 	process.exit(1);
