@@ -12,11 +12,12 @@ if [[ -s $binaryPath/$outputFile ]];
 		ipAddress=$(cat $binaryPath/$outputFile | jq -r ".[$choice].PrivateIpAddress")
 		if [[ $ipAddress != "null" ]];
 			then
-				rm $binaryPath/$outputFile
+				rm -f $binaryPath/$outputFile
 				ssh ec2-user@$ipAddress
 			else
 				echo "Invalid choice"
 			fi
 	fi
+else
 	rm -f $binaryPath/$outputFile
 fi
