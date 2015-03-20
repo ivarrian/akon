@@ -17,6 +17,8 @@ if [[ -s $binaryPath/$outputFile ]];
 			else
 				echo "Invalid choice"
 			fi
+		else
+			rm -f $binaryPath/$outputFile
 	fi
 else
 	rm -f $binaryPath/$outputFile
