@@ -3,20 +3,36 @@
 'use strict';
 
 var aws = require('aws-sdk');
+var argv = require('yargs').argv;
 var Table = require('cli-table');
 var fs = require('fs');
+if(argv.hasOwnProperty('profile'))
+	var profileToUse = 'profile '+argv.profile;
+else
+	var profileToUse = 'default';
+var credentials = new aws.SharedIniFileCredentials({profile: profileToUse});
+aws.config.credentials = credentials;
+
+if(argv.hasOwnProperty('region'))
+	var regionToUse = argv.region;
+else
+	var regionToUse = 'ap-southeast-2';
+var ec2 = new aws.EC2({region: regionToUse});
+
+
+
 var constructed=[];
-var ec2 = new aws.EC2({region: "ap-southeast-2"});
 var table = new Table({
     head: ['','Name','ID','Type','LaunchedAt','IP','State']
   , colWidths: [5,40,12,12,28,20,20]
 });
-
 function usage()
 {
 	console.log("Usage");
 	console.log("---------------------------------------------------------");
-	console.log(process.argv[1] + " arg1 [arg2]...[argN]");
+	console.log(process.argv[1] + " [--profile profileName] [--region awsRegion] arg1 [arg2]...[argN]");
+	console.log("profileName: AWS profile to use, defaults to 'default' profile");
+	console.log("awsRegion: AWS region to use, defaults to 'ap-southeast-2'");
 	console.log("arg1: Search string in a dashed naming convention");
 	console.log("argN: Search string in a dashed naming convention");
 	console.log("For example , group-environment-*-application-single can be found with "+process.argv[1]+" group environment \"*\" application single");
@@ -29,20 +45,19 @@ if (process.argv.length < 4)
 }
 
 var finalString="";
-var fileName = process.argv[2];
-for(var i=3; i< process.argv.length; i++)
+var fileName = argv._[0];
+for(var i=1; i< argv._.length; i++)
 {
 	if(finalString == "")
 	{
-		finalString = process.argv[i];
+		finalString = argv._[i];
 	}
 	else
 	{
-		finalString = finalString + "-" + process.argv[i];
+		finalString = finalString + "-" + argv._[i];
 	}
 }
 finalString = finalString+"*"; 
-
 var params = {
   DryRun: false,
   Filters : [
