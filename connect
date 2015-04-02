@@ -7,7 +7,7 @@ var argv = require('yargs').argv;
 var Table = require('cli-table');
 var fs = require('fs');
 if(argv.hasOwnProperty('profile'))
-	var profileToUse = 'profile '+argv.profile;
+	var profileToUse = argv.profile;
 else
 	var profileToUse = 'default';
 var credentials = new aws.SharedIniFileCredentials({profile: profileToUse});
