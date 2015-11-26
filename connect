@@ -3,6 +3,7 @@
 'use strict';
 
 var aws = require('aws-sdk');
+var HttpsProxyAgent = require('https-proxy-agent');
 var argv = require('yargs').argv;
 var Table = require('cli-table');
 var fs = require('fs');
@@ -12,6 +13,14 @@ else
 	var profileToUse = 'default';
 var credentials = new aws.SharedIniFileCredentials({profile: profileToUse});
 aws.config.credentials = credentials;
+
+if (typeof process.env.https_proxy !== 'undefined') {
+  aws.config.update({
+    httpOptions: {
+      agent: new HttpsProxyAgent(process.env.https_proxy)
+    }
+  });
+}
 
 if(argv.hasOwnProperty('region'))
 	var regionToUse = argv.region;
