@@ -103,28 +103,30 @@ ec2.describeInstances(params, function(err, data) {
 			  			if(data.Reservations[i].Instances[j].Tags[k].Key == "Name")
 			  			{
 			  				constructed[++constructCounter] = data.Reservations[i].Instances[j];
-								// if public flag is set, list public addresses
-								if(publicAddress == true){
-									if(typeof data.Reservations[i].Instances[j].PublicIpAddress === 'undefined') {
-				  					table.push([++counter,data.Reservations[i].Instances[j].Tags[k].Value,data.Reservations[i].Instances[j].InstanceId,data.Reservations[i].Instances[j].InstanceType,data.Reservations[i].Instances[j].LaunchTime,'n/a',data.Reservations[i].Instances[j].State.Name]);
-										if(typeof constructed[constructCounter].PrivateIpAddress !== 'undefined')
-											delete constructed[constructCounter].PrivateIpAddress;
-				  				}
-				  				else
-				  				{
-				  					table.push([++counter,data.Reservations[i].Instances[j].Tags[k].Value,data.Reservations[i].Instances[j].InstanceId,data.Reservations[i].Instances[j].InstanceType,data.Reservations[i].Instances[j].LaunchTime,data.Reservations[i].Instances[j].PublicIpAddress,data.Reservations[i].Instances[j].State.Name]);
-										// override private ip to be public ip since the akon script uses private address
-										constructed[constructCounter].PrivateIpAddress = data.Reservations[i].Instances[j].PublicIpAddress;
-				  				}
-								}
-								else { // else list private addresses
-									if(typeof data.Reservations[i].Instances[j].PrivateIpAddress === 'undefined') {
-				  					table.push([++counter,data.Reservations[i].Instances[j].Tags[k].Value,data.Reservations[i].Instances[j].InstanceId,data.Reservations[i].Instances[j].InstanceType,data.Reservations[i].Instances[j].LaunchTime,'n/a',data.Reservations[i].Instances[j].State.Name]);
-				  				}
-				  				else
-				  				{
-				  					table.push([++counter,data.Reservations[i].Instances[j].Tags[k].Value,data.Reservations[i].Instances[j].InstanceId,data.Reservations[i].Instances[j].InstanceType,data.Reservations[i].Instances[j].LaunchTime,data.Reservations[i].Instances[j].PrivateIpAddress,data.Reservations[i].Instances[j].State.Name]);
-				  				}
+								if(data.Reservations[i].Instances[j].State.Name == 'running'){
+									// if public flag is set, list public addresses
+									if(publicAddress == true){
+										if(typeof data.Reservations[i].Instances[j].PublicIpAddress === 'undefined') {
+											table.push([++counter,data.Reservations[i].Instances[j].Tags[k].Value,data.Reservations[i].Instances[j].InstanceId,data.Reservations[i].Instances[j].InstanceType,data.Reservations[i].Instances[j].LaunchTime,'n/a',data.Reservations[i].Instances[j].State.Name]);
+											if(typeof constructed[constructCounter].PrivateIpAddress !== 'undefined')
+												delete constructed[constructCounter].PrivateIpAddress;
+										}
+										else
+										{
+											table.push([++counter,data.Reservations[i].Instances[j].Tags[k].Value,data.Reservations[i].Instances[j].InstanceId,data.Reservations[i].Instances[j].InstanceType,data.Reservations[i].Instances[j].LaunchTime,data.Reservations[i].Instances[j].PublicIpAddress,data.Reservations[i].Instances[j].State.Name]);
+											// override private ip to be public ip since the akon script uses private address
+											constructed[constructCounter].PrivateIpAddress = data.Reservations[i].Instances[j].PublicIpAddress;
+										}
+									}
+									else { // else list private addresses
+										if(typeof data.Reservations[i].Instances[j].PrivateIpAddress === 'undefined') {
+											table.push([++counter,data.Reservations[i].Instances[j].Tags[k].Value,data.Reservations[i].Instances[j].InstanceId,data.Reservations[i].Instances[j].InstanceType,data.Reservations[i].Instances[j].LaunchTime,'n/a',data.Reservations[i].Instances[j].State.Name]);
+										}
+										else
+										{
+											table.push([++counter,data.Reservations[i].Instances[j].Tags[k].Value,data.Reservations[i].Instances[j].InstanceId,data.Reservations[i].Instances[j].InstanceType,data.Reservations[i].Instances[j].LaunchTime,data.Reservations[i].Instances[j].PrivateIpAddress,data.Reservations[i].Instances[j].State.Name]);
+										}
+									}
 								}
 			  			}
 
