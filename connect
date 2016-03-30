@@ -102,8 +102,9 @@ ec2.describeInstances(params, function(err, data) {
 			  		{
 			  			if(data.Reservations[i].Instances[j].Tags[k].Key == "Name")
 			  			{
-			  				constructed[++constructCounter] = data.Reservations[i].Instances[j];
+
 								if(data.Reservations[i].Instances[j].State.Name == 'running'){
+									constructed[++constructCounter] = data.Reservations[i].Instances[j];
 									// if public flag is set, list public addresses
 									if(publicAddress == true){
 										if(typeof data.Reservations[i].Instances[j].PublicIpAddress === 'undefined') {
