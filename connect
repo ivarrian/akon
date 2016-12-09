@@ -7,10 +7,13 @@ var HttpsProxyAgent = require('https-proxy-agent');
 var argv = require('yargs').argv;
 var Table = require('cli-table');
 var fs = require('fs');
-if(argv.hasOwnProperty('profile'))
-	var profileToUse = argv.profile;
-else
-	var profileToUse = 'default';
+let profileToUse = 'default';
+if (argv.hasOwnProperty('profile')) {
+  profileToUse = argv.profile;
+}
+else if (typeof process.env.AWS_PROFILE !== 'undefined') {
+  profileToUse = process.env.AWS_PROFILE;
+}
 var credentials = new aws.SharedIniFileCredentials({profile: profileToUse});
 aws.config.credentials = credentials;
 
