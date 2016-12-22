@@ -7,11 +7,20 @@ var HttpsProxyAgent = require('https-proxy-agent');
 var argv = require('yargs').argv;
 var Table = require('cli-table');
 var fs = require('fs');
-if(argv.hasOwnProperty('profile'))
-	var profileToUse = argv.profile;
-else
-	var profileToUse = 'default';
-var credentials = new aws.SharedIniFileCredentials({profile: profileToUse});
+
+// default values
+let profileToUse = 'default';
+let regionToUse = 'ap-southeast-2';
+let publicAddress = false;
+
+if (argv.hasOwnProperty('profile')) {
+  profileToUse = argv.profile;
+}
+else if (typeof process.env.AWS_PROFILE !== 'undefined') {
+  console.log(`AWS_PROFILE is set to ${process.env.AWS_PROFILE}, so we will use it.`);
+  profileToUse = process.env.AWS_PROFILE;
+}
+var credentials = new aws.SharedIniFileCredentials({ profile: profileToUse });
 aws.config.credentials = credentials;
 
 if (typeof process.env.https_proxy !== 'undefined') {
@@ -22,128 +31,142 @@ if (typeof process.env.https_proxy !== 'undefined') {
   });
 }
 
-if(argv.hasOwnProperty('region'))
-	var regionToUse = argv.region;
-else
-	var regionToUse = 'ap-southeast-2';
+if (argv.hasOwnProperty('region')) {
+  regionToUse = argv.region;
+}
 
-var ec2 = new aws.EC2({region: regionToUse});
+var ec2 = new aws.EC2({ region: regionToUse });
 
-if(argv.hasOwnProperty('public'))
-	var publicAddress = true;
-else
-	var publicAddress = false;
+if (argv.hasOwnProperty('public')) {
+  publicAddress = true;
+}
 
-
-var constructed=[];
+var constructed = [];
 var table = new Table({
-    head: ['','Name','ID','Type','LaunchedAt','IP','State']
-  , colWidths: [5,40,12,12,28,20,20]
+  head: ['','Name','ID','Type','LaunchedAt','IP','State'],
+  colWidths: [5,40,12,12,28,20,20]
 });
-function usage()
-{
-	console.log("");
-	console.log("Usage");
-	console.log("---------------------------------------------------------------------------------------------------------------------");
-	console.log("akon [--public] [--profile profileName] [--region awsRegion] arg1 [arg2]...[argN]");
-	console.log("public: List Public IP addresses of instances, defaults to unset(will list private IP addresses, if available)");
-	console.log("profileName: AWS profile to use, defaults to 'default' profile");
-	console.log("awsRegion: AWS region to use, defaults to 'ap-southeast-2'");
-	console.log("arg1: Search string in a dashed naming convention");
-	console.log("argN: Search string in a dashed naming convention");
-	console.log("For example , group-environment-*-application-single can be found with "+process.argv[1]+" group environment \"*\" application single");
+function usage() {
+  console.log("");
+  console.log("Usage");
+  console.log("---------------------------------------------------------------------------------------------------------------------");
+  console.log("akon [--public] [--profile profileName] [--region awsRegion] arg1 [arg2]...[argN]");
+  console.log("public: List Public IP addresses of instances, defaults to unset(will list private IP addresses, if available)");
+  console.log("profileName: AWS profile to use, defaults to 'default' profile");
+  console.log("awsRegion: AWS region to use, defaults to 'ap-southeast-2'");
+  console.log("arg1: Search string in a dashed naming convention");
+  console.log("argN: Search string in a dashed naming convention");
+  console.log("For example , group-environment-*-application-single can be found with " + process.argv[1] + " group environment \"*\" application single");
 }
 
-if (process.argv.length < 4)
-{
-	usage();
-	process.exit(1);
+if (process.argv.length < 4) {
+  usage();
+  process.exit(1);
 }
 
-var finalString="";
+var finalString = "";
 var fileName = argv._[0];
-for(var i=1; i< argv._.length; i++)
-{
-	if(finalString == "")
-	{
-		finalString = argv._[i];
-	}
-	else
-	{
-		finalString = finalString + "-" + argv._[i];
-	}
+for (var i = 1; i < argv._.length; i++) {
+  if (finalString === "") {
+    finalString = argv._[i];
+  }
+  else {
+    finalString = finalString + "-" + argv._[i];
+  }
 }
-finalString = finalString+"*";
+finalString = finalString + "*";
 var params = {
   DryRun: false,
   Filters : [
-  	{
-  		Name: 'tag:Name',
-  		Values : [
-  			finalString
-  		]
-  	}
+  {
+    Name: 'tag:Name',
+    Values : [
+      finalString
+    ]
+  }
   ]
 };
 ec2.describeInstances(params, function(err, data) {
-  if (err)
-  	console.log(err, err.stack);
-  else
-  {
-  		var counter = 0;
-  		var constructCounter = 0;
-  		if(data.Reservations.length > 0)
-  		{
-		  	for(var i=0;i<data.Reservations.length;i++)
-		  	{
-		  		for(var j=0; j<data.Reservations[i].Instances.length; j++)
-		  		{
-		  			for(var k=0;k<data.Reservations[i].Instances[j].Tags.length;k++)
-			  		{
-			  			if(data.Reservations[i].Instances[j].Tags[k].Key == "Name")
-			  			{
-
-								if(data.Reservations[i].Instances[j].State.Name == 'running'){
-									constructed[++constructCounter] = data.Reservations[i].Instances[j];
-									// if public flag is set, list public addresses
-									if(publicAddress == true){
-										if(typeof data.Reservations[i].Instances[j].PublicIpAddress === 'undefined') {
-											table.push([++counter,data.Reservations[i].Instances[j].Tags[k].Value,data.Reservations[i].Instances[j].InstanceId,data.Reservations[i].Instances[j].InstanceType,data.Reservations[i].Instances[j].LaunchTime,'n/a',data.Reservations[i].Instances[j].State.Name]);
-											if(typeof constructed[constructCounter].PrivateIpAddress !== 'undefined')
-												delete constructed[constructCounter].PrivateIpAddress;
-										}
-										else
-										{
-											table.push([++counter,data.Reservations[i].Instances[j].Tags[k].Value,data.Reservations[i].Instances[j].InstanceId,data.Reservations[i].Instances[j].InstanceType,data.Reservations[i].Instances[j].LaunchTime,data.Reservations[i].Instances[j].PublicIpAddress,data.Reservations[i].Instances[j].State.Name]);
-											// override private ip to be public ip since the akon script uses private address
-											constructed[constructCounter].PrivateIpAddress = data.Reservations[i].Instances[j].PublicIpAddress;
-										}
-									}
-									else { // else list private addresses
-										if(typeof data.Reservations[i].Instances[j].PrivateIpAddress === 'undefined') {
-											table.push([++counter,data.Reservations[i].Instances[j].Tags[k].Value,data.Reservations[i].Instances[j].InstanceId,data.Reservations[i].Instances[j].InstanceType,data.Reservations[i].Instances[j].LaunchTime,'n/a',data.Reservations[i].Instances[j].State.Name]);
-										}
-										else
-										{
-											table.push([++counter,data.Reservations[i].Instances[j].Tags[k].Value,data.Reservations[i].Instances[j].InstanceId,data.Reservations[i].Instances[j].InstanceType,data.Reservations[i].Instances[j].LaunchTime,data.Reservations[i].Instances[j].PrivateIpAddress,data.Reservations[i].Instances[j].State.Name]);
-										}
-									}
-								}
-			  			}
-
-			  		}
-		  		}
-
-		  	}
-		  	fs.writeFile(fileName, JSON.stringify(constructed), function (err) {
-			  if (err) return console.log(err);
-			  process.exit();
-			});
-		  	console.log(table.toString());
-	  	}
-	  	else
-	  	{
-	  		console.log("No instances found");
-	  	}
+  if (err) {
+    console.log(err, err.stack);
+  }
+  else {
+    var counter = 0;
+    var constructCounter = 0;
+    if (data.Reservations.length > 0) {
+      for (var i = 0; i < data.Reservations.length; i++) {
+        for (var j = 0; j < data.Reservations[i].Instances.length; j++) {
+          for (var k = 0; k < data.Reservations[i].Instances[j].Tags.length; k++) {
+            if (data.Reservations[i].Instances[j].Tags[k].Key == "Name") {
+              if (data.Reservations[i].Instances[j].State.Name == 'running') {
+                constructed[++constructCounter] = data.Reservations[i].Instances[j];
+                // if public flag is set, list public addresses
+                if (publicAddress === true) {
+                  if (typeof data.Reservations[i].Instances[j].PublicIpAddress === 'undefined') {
+                    table.push([
+                      ++counter,
+                      data.Reservations[i].Instances[j].Tags[k].Value,
+                      data.Reservations[i].Instances[j].InstanceId,
+                      data.Reservations[i].Instances[j].InstanceType,
+                      data.Reservations[i].Instances[j].LaunchTime,
+                      'n/a',
+                      data.Reservations[i].Instances[j].State.Name
+                    ]);
+                    if (typeof constructed[constructCounter].PrivateIpAddress !== 'undefined') {
+                      delete constructed[constructCounter].PrivateIpAddress;
+                    }
+                  }
+                  else {
+                    table.push([
+                        ++counter,
+                        data.Reservations[i].Instances[j].Tags[k].Value,
+                        data.Reservations[i].Instances[j].InstanceId,
+                        data.Reservations[i].Instances[j].InstanceType,
+                        data.Reservations[i].Instances[j].LaunchTime,
+                        data.Reservations[i].Instances[j].PublicIpAddress,
+                        data.Reservations[i].Instances[j].State.Name
+                    ]);
+                    // override private ip to be public ip since the akon script uses private address
+                    constructed[constructCounter].PrivateIpAddress = data.Reservations[i].Instances[j].PublicIpAddress;
+                  }
+                }
+                else { // else list private addresses
+                  if (typeof data.Reservations[i].Instances[j].PrivateIpAddress === 'undefined') {
+                    table.push([
+                        ++counter,
+                        data.Reservations[i].Instances[j].Tags[k].Value,
+                        data.Reservations[i].Instances[j].InstanceId,
+                        data.Reservations[i].Instances[j].InstanceType,
+                        data.Reservations[i].Instances[j].LaunchTime,
+                        'n/a',
+                        data.Reservations[i].Instances[j].State.Name
+                    ]);
+                  }
+                  else {
+                    table.push([
+                        ++counter,
+                        data.Reservations[i].Instances[j].Tags[k].Value,
+                        data.Reservations[i].Instances[j].InstanceId,
+                        data.Reservations[i].Instances[j].InstanceType,
+                        data.Reservations[i].Instances[j].LaunchTime,
+                        data.Reservations[i].Instances[j].PrivateIpAddress,
+                        data.Reservations[i].Instances[j].State.Name
+                    ]);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      fs.writeFile(fileName, JSON.stringify(constructed), function(err) {
+        if (err) return console.log(err);
+        process.exit();
+      });
+      console.log(table.toString());
+    }
+    else {
+      console.log("No instances found");
+    }
   }
 });
