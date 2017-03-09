@@ -44,7 +44,7 @@ if (argv.hasOwnProperty('public')) {
 var constructed = [];
 var table = new Table({
   head: ['','Name','ID','Type','LaunchedAt','IP','State'],
-  colWidths: [5,40,12,12,28,20,20]
+  colWidths: [5,40,21,12,28,20,20]
 });
 function usage() {
   console.log("");
